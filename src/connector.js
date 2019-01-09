@@ -78,6 +78,7 @@ class BotiumConnectorBotkit {
 
     this.ws.send(
       JSON.stringify({
+        type: 'message',
         text: msg.messageText,
         user: this.userId,
         channel: 'websocket'
