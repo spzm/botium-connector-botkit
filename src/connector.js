@@ -56,6 +56,7 @@ class BotiumConnectorBotkit {
     } else {
       this.userId = uuidv4()
     }
+    return Promise.resolve()
   }
 
   UserSays (msg) {
@@ -65,8 +66,19 @@ class BotiumConnectorBotkit {
 
   Stop () {
     debug('Stop called')
-    this.ws.close()
     this.userId = null
+  }
+
+  Clean () {
+    debug('Clean called')
+    const closePromise = new Promise(resolve => {
+      this.ws.on('close', () => {
+        debug('Stopped')
+        resolve()
+      })
+    })
+    this.ws.close()
+    return closePromise
   }
 
   _sendMessage (msg) {
@@ -76,14 +88,18 @@ class BotiumConnectorBotkit {
       throw new Error(`websocket connection failed: ${this.ws}`)
     }
 
-    this.ws.send(
-      JSON.stringify({
-        type: 'message',
-        text: msg.messageText,
-        user: this.userId,
-        channel: 'websocket'
-      })
-    )
+    const basicMessage = {
+      type: 'message',
+      text: msg.messageText,
+      user: this.userId,
+      channel: 'websocket'
+    }
+
+    const completeMessage = msg.sourceData
+      ? { ...basicMessage, ...msg.sourceData }
+      : basicMessage
+
+    this.ws.send(JSON.stringify(completeMessage))
   }
 
   _onBotMessage (msgString) {
